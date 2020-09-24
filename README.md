@@ -36,7 +36,7 @@ for event in loader
 end
 ```
 
-An Event object supports:
+An `Event` object supports:
 
 ```julia
 julia> energy(e)
@@ -52,7 +52,7 @@ julia> primarycount(e)
 3
 ```
 
-An event is made up of hits. Access them with:
+An `Event` is made up of hits. Access them with:
 
 ```julia
 julia> hits(e)
