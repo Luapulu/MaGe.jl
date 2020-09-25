@@ -1,6 +1,8 @@
 # MaGe.jl
 
-MaGe.jl provides basic tools to analyse data output by the MaGe simulation framework.
+MaGe.jl provides basic functionality for reading and analysing results from the MaGe simulation framework in julia.
+
+Currently, only the Dario output scheme is supported.
 
 ## Usage
 
@@ -36,7 +38,7 @@ for event in loader
 end
 ```
 
-An `Event` object supports:
+An `Event` object has the following interface:
 
 ```julia
 julia> energy(e)
@@ -75,7 +77,7 @@ julia> h = hits(e)[1]
 Hit(1.60738, -2.07026, -201.594, 0.1638, 0.0, 22, 187, 4)
 ```
 
-A `Hit` object supports:
+A `Hit` object has the following interface:
 
 ```julia
 julia> location(h)
