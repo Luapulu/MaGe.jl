@@ -11,7 +11,7 @@ To load an entire .root.hits file use:
 ```julia
 julia> using MaGe
 
-julia> events = collect(MaGe.load("path-to-file.root.hits")); e = events[1]
+julia> events = MaGe.load("path-to-file.root.hits"); e = events[1]
 Event{Array{Hit,1}} with eventnum: 624, hitcount: 119, primarycount: 3 and hits:
 119-element Array{Hit,1}:
  Hit(1.60738, -2.07026, -201.594, 0.1638, 0.0, 22, 187, 4)
@@ -29,16 +29,30 @@ Event{Array{Hit,1}} with eventnum: 624, hitcount: 119, primarycount: 3 and hits:
  Hit(1.60714, -2.06979, -201.594, 1.09771, 0.0, 11, 269, 235)
 ```
 
-You can iterate over the result of `MaGe.load` to parse the file one event at a time.
+You can parse the file one event at a time with:
 
 ```julia
-loader = MaGe.load("path-to-file.root.hits")
-for event in loader
-    # Do something with the event
+MaGe.loadstreaming("path-to-file.root.hits") do stream
+    for event in stream
+        # Do something with the event
+    end
 end
 ```
 
-An `Event` object has the following interface:
+Or, equivalently:
+
+```julia
+MaGe.loadstreaming("path-to-file.root.hits") do stream
+    while !eof(stream)
+        event = read(stream)
+        # Do something with the event
+    end
+end
+```
+
+When used with `do` syntax both `load` and `loadstreaming` ensure the file is closed after use. However, if an IO stream is passed to either function, the stream will not be closed automatically.
+
+An event has the following interface:
 
 ```julia
 julia> energy(e)
@@ -54,7 +68,7 @@ julia> primarycount(e)
 3
 ```
 
-An `Event` is made up of hits. Access them with:
+An event is made up of hits. Access them with:
 
 ```julia
 julia> hits(e)
@@ -72,14 +86,22 @@ julia> hits(e)
  Hit(1.60701, -2.06825, -201.596, 2.29979, 0.0, 11, 271, 235)
  Hit(1.60712, -2.06936, -201.595, 3.3094, 0.0, 11, 270, 235)
  Hit(1.60714, -2.06979, -201.594, 1.09771, 0.0, 11, 269, 235)
-
-julia> h = hits(e)[1]
-Hit(1.60738, -2.07026, -201.594, 0.1638, 0.0, 22, 187, 4)
 ```
 
-A `Hit` object has the following interface:
+An event is also an iterable of hits:
 
 ```julia
+for hit in e
+    # Do something with the hit
+end
+```
+
+A hit has the following interface:
+
+```julia
+julia> h = hits(e)[1]
+Hit(1.60738, -2.07026, -201.594, 0.1638, 0.0, 22, 187, 4)
+
 julia> location(h)
 (1.60738, -2.07026, -201.594)
 
