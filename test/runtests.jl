@@ -80,7 +80,7 @@ end
 
     @test MaGe.is_root_hit_file(eventpath)
 
-    events = collect(MaGe.load(eventpath))
+    events = MaGe.load(eventpath)
 
     lastevent = events[end]
 

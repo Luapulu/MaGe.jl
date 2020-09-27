@@ -68,6 +68,6 @@ is_root_hit_file(path::AbstractString) = occursin(r"root.hits$", path)
 function load(f::AbstractString; T=Event{Vector{Hit}})
     is_root_hit_file(f) || error("cannot read events from $f")
     loadstreaming(f) do stream
-        return (convert(T, e) for e in stream)
+        return collect(T, stream)
     end
 end
