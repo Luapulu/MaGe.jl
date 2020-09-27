@@ -1,7 +1,7 @@
 name = "MaGe"
 uuid = "a1237f97-e57a-43a8-8ead-9081d93d2731"
 authors = ["Paul Nemec"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Parsers = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
