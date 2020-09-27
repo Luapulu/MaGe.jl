@@ -68,7 +68,15 @@ julia> primarycount(e)
 3
 ```
 
-An event is made up of hits. Access them with:
+An event is made up of hits. Access them by iterating:
+
+```julia
+for hit in e
+    # Do something with the hit
+end
+```
+
+or by getting the underlying collection (a vector in this case):
 
 ```julia
 julia> hits(e)
@@ -86,14 +94,6 @@ julia> hits(e)
  Hit(1.60701, -2.06825, -201.596, 2.29979, 0.0, 11, 271, 235)
  Hit(1.60712, -2.06936, -201.595, 3.3094, 0.0, 11, 270, 235)
  Hit(1.60714, -2.06979, -201.594, 1.09771, 0.0, 11, 269, 235)
-```
-
-An event is also an iterable of hits:
-
-```julia
-for hit in e
-    # Do something with the hit
-end
 ```
 
 A hit has the following interface:
