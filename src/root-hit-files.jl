@@ -82,10 +82,7 @@ end
 
 function load(path::AbstractString; T=Event{Vector{Hit}})
     is_root_hit_file(path) || error("cannot read events from $f")
-    f = open(path)
-    try
+    open(path) do f
         return load(f; T=T)
-    finally
-        close(f)
     end
 end
