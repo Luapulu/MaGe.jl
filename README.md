@@ -50,7 +50,7 @@ MaGe.loadstreaming("path-to-file.root.hits") do stream
 end
 ```
 
-When used with `do` syntax both `load` and `loadstreaming` ensure the file is closed after use. However, if an IO stream is passed to either function, the stream will not be closed automatically.
+Both `loadstreaming`, when used with `do` syntax, and `load` ensure the file is closed after use. However, if an IO stream is passed to either function, the stream will not be closed automatically.
 
 An event has the following interface:
 
