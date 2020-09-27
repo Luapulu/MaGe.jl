@@ -44,14 +44,16 @@ Base.IteratorEltype(::Type{RootHitReader}) = Base.HasEltype()
 Base.eltype(::Type{RootHitReader}) = Event{RootHitIter}
 
 function Base.iterate(reader::RootHitReader, state = nothing)
-    eof(reader.stream) && return (close(reader); nothing)
-    return read(reader), nothing
+    eof(reader) && return (close(reader); nothing)
+    return read(reader, Event{Vector{Hit}}), nothing
 end
 
-function Base.read(reader::RootHitReader, T=Event{RootHitIter})
+function Base.read(reader::RootHitReader, T=Event{Vector{Hit}})
     enum, hitcnt, primcnt = parse_meta(reader.stream)
     return convert(T, Event(enum, hitcnt, primcnt, RootHitIter(hitcnt, reader.stream)))
 end
+
+Base.eof(reader::RootHitReader) = eof(reader.stream)
 
 function Base.close(reader::RootHitReader)
     reader.ownstream && close(reader.stream)
@@ -61,13 +63,29 @@ loadstreaming(stream::IO) = RootHitReader(stream, false)
 loadstreaming(f::Function, stream::IO) = f(loadstreaming(stream))
 
 loadstreaming(path::AbstractString) = RootHitReader(open(path), true)
-loadstreaming(f::Function, path::AbstractString) = f(loadstreaming(path))
+function loadstreaming(f::Function, path::AbstractString)
+    reader = loadstreaming(path)
+    try
+        return f(reader)
+    finally
+        close(reader)
+    end
+end
 
 is_root_hit_file(path::AbstractString) = occursin(r"root.hits$", path)
 
-function load(f::AbstractString; T=Event{Vector{Hit}})
-    is_root_hit_file(f) || error("cannot read events from $f")
-    loadstreaming(f) do stream
+function load(stream::IO; T=Event{Vector{Hit}})
+    loadstreaming(stream) do stream
         return collect(T, stream)
+    end
+end
+
+function load(path::AbstractString; T=Event{Vector{Hit}})
+    is_root_hit_file(path) || error("cannot read events from $f")
+    f = open(path)
+    try
+        return load(f; T=T)
+    finally
+        close(f)
     end
 end
