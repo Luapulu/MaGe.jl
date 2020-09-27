@@ -113,6 +113,6 @@ end
 
     badpath = realpath(joinpath(dirname(pathof(MaGe)), "..", "test", "bad.root.hits"))
     badreader = MaGe.loadstreaming(badpath)
-    @test_throws Parsers.Error Event{Vector{Hit}}(read(badreader))
+    @test_throws Parsers.Error read(badreader)
     @test_throws Parsers.Error read(badreader)
 end
