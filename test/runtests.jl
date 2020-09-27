@@ -45,17 +45,16 @@ end
     @test MaGe.parse_hit(hitstream) == Hit(1.60738, -2.07026, -201.594, 0.1638, 0, 22, 187, 4)
     @test MaGe.parse_hit(hitstream) == Hit(1.91771, -2.52883, -201.842, 0.24458, 0, 22, 187, 4)
 
-    test_stream = IOBuffer(
+    teststream = IOBuffer(
         """
         624 2 3
         1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet
         1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet
         """)
-    test_stream2 = copy(test_stream)
 
-    test_reader = MaGe.RootHitReader(test_stream, false)
+    testreader = MaGe.loadstreaming(teststream)
 
-    e = read(test_reader)
+    e = read(testreader)
     @test eventnum(e) == 624
     @test hitcount(e) == 2
     @test primarycount(e) == 3
@@ -65,16 +64,15 @@ end
         MaGe.parse_hit(IOBuffer("1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet"))
     ]
 
-    e2 = Event{Vector{Hit}}(e)
-
     for i in 1:2
-        @test hits(e2)[i] == parsed_hits[i]
+        @test hits(e)[i] == parsed_hits[i]
     end
 
-    @test isnothing(iterate(test_reader))
+    for (h1, h2) in zip(e, hits(e))
+        @test h1 == h2
+    end
 
-    e3 = read(MaGe.loadstreaming(test_stream2), Event{Vector{Hit}})
-    @test typeof(e3) == Event{Vector{Hit}}
+    @test isnothing(iterate(testreader))
 
     eventpath = realpath(joinpath(dirname(pathof(MaGe)), "..", "test", "test.root.hits"))
 
@@ -93,6 +91,25 @@ end
     @test hits(lastevent)[1] == Hit(-1.2325, -2.44103, -196.814, 0.07764, 0.0, 22, 9, 6)
 
     @test hits(lastevent)[end] == Hit(-1.18915, -2.28214, -198.958, 8.4419, 0.0, 11, 165, 16)
+
+    @test MaGe.loadstreaming(eventpath) do stream
+        for e in stream
+            if eventnum(e) == 999851
+                return hitcount(e) == 319
+            end
+        end
+        return false
+    end
+
+    @test MaGe.loadstreaming(eventpath) do stream
+        while !eof(stream)
+            e = read(stream)
+            if eventnum(e) == 999851
+                return hitcount(e) == 319
+            end
+        end
+        return false
+    end
 
     badpath = realpath(joinpath(dirname(pathof(MaGe)), "..", "test", "bad.root.hits"))
     badreader = MaGe.loadstreaming(badpath)
