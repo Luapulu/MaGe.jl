@@ -1,11 +1,11 @@
 name = "MaGe"
 uuid = "a1237f97-e57a-43a8-8ead-9081d93d2731"
 authors = ["Paul Nemec"]
-version = "0.3.0"
+version = "0.2.1"
 
 [deps]
 Parsers = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
-julia = "1.5"
+julia = "1.3"

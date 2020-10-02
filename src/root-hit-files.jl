@@ -38,15 +38,6 @@ end
 struct RootHitReader
     stream::IO
     ownstream::Bool
-    lock::ReentrantLock
-end
-
-function RootHitReader(stream::IOStream, ownstream::Bool)
-    RootHitReader(stream, ownstream, stream.lock)
-end
-
-function RootHitReader(stream::IO, ownstream::Bool)
-    RootHitReader(stream, ownstream, ReentrantLock())
 end
 
 Base.IteratorSize(::Type{RootHitReader}) = Base.SizeUnknown()
@@ -60,30 +51,20 @@ function Base.iterate(reader::RootHitReader, state = nothing)
 end
 
 function Base.read(reader::RootHitReader, T=Event{Vector{Hit}})
-    lock(reader.lock) do
-        enum, hitcnt, primcnt = parse_meta(reader.stream)
-        return convert(T, Event(enum, hitcnt, primcnt, RootHitIter(hitcnt, reader.stream)))
-    end
+    enum, hitcnt, primcnt = parse_meta(reader.stream)
+    return convert(T, Event(enum, hitcnt, primcnt, RootHitIter(hitcnt, reader.stream)))
 end
 
-function Base.eof(reader::RootHitReader)
-    lock(reader.lock) do
-        eof(reader.stream)
-    end
-end
+Base.eof(reader::RootHitReader) = eof(reader.stream)
 
 function Base.close(reader::RootHitReader)
-    if reader.ownstream
-        lock(reader.lock) do
-            close(reader.stream)
-        end
-    end
+    reader.ownstream && close(reader.stream)
 end
 
 loadstreaming(stream::IO) = RootHitReader(stream, false)
 loadstreaming(f::Function, stream::IO) = f(loadstreaming(stream))
 
-loadstreaming(path::AbstractString) = RootHitReader(open(path, lock=false), true)
+loadstreaming(path::AbstractString) = RootHitReader(open(path), true)
 function loadstreaming(f::Function, path::AbstractString)
     reader = loadstreaming(path)
     try
@@ -103,7 +84,7 @@ end
 
 function load(path::AbstractString; T=Event{Vector{Hit}})
     is_root_hit_file(path) || error("cannot read events from $f")
-    open(path, lock=false) do f
+    open(path) do f
         return load(f; T=T)
     end
 end
