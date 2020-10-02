@@ -1,23 +1,25 @@
-function parse_meta(stream::IO)
-    eventnum = Parsers.parse(Int64, readuntil(stream, ' '))
-    hitcount = Parsers.parse(Int64, readuntil(stream, ' '))
-    primarycount = Parsers.parse(Int64, readuntil(stream, '\n'))
-    return eventnum, hitcount, primarycount
+function parse_meta(stream::IOStream)
+    line = IOBuffer(readuntil(stream, '\n'))
+    return (
+        Parsers.parse(Int64, line),
+        Parsers.parse(Int64, line),
+        Parsers.parse(Int64, line)
+    )
 end
 
-function parse_hit(stream::IO)
-    x = Parsers.parse(Float64, readuntil(stream, ' '))
-    y = Parsers.parse(Float64, readuntil(stream, ' '))
-    z = Parsers.parse(Float64, readuntil(stream, ' '))
-    E = Parsers.parse(Float64, readuntil(stream, ' '))
-    t = Parsers.parse(Float64, readuntil(stream, ' '))
-    particleid = Parsers.parse(Int64, readuntil(stream, ' '))
-    trackid = Parsers.parse(Int64, readuntil(stream, ' '))
-    trackparentid = Parsers.parse(Int64, readuntil(stream, ' '))
-
-    skip(stream, 9)
-
-    return Hit(x, y, z, E, t, particleid, trackid, trackparentid)
+function parse_hit(stream::IOStream)
+    line = IOBuffer(readuntil(stream, UInt8('p')))
+    skip(stream, 8)
+    return Hit(
+        Parsers.parse(Float64, line),
+        Parsers.parse(Float64, line),
+        Parsers.parse(Float64, line),
+        Parsers.parse(Float64, line),
+        Parsers.parse(Float64, line),
+        Parsers.parse(Int64, line),
+        Parsers.parse(Int64, line),
+        Parsers.parse(Int64, line)
+    )
 end
 
 struct RootHitIter <: AbstractHitIter
@@ -36,6 +38,15 @@ end
 struct RootHitReader
     stream::IO
     ownstream::Bool
+    lock::ReentrantLock
+end
+
+function RootHitReader(stream::IOStream, ownstream::Bool)
+    RootHitReader(stream, ownstream, stream.lock)
+end
+
+function RootHitReader(stream::IO, ownstream::Bool)
+    RootHitReader(stream, ownstream, ReentrantLock())
 end
 
 Base.IteratorSize(::Type{RootHitReader}) = Base.SizeUnknown()
@@ -49,20 +60,30 @@ function Base.iterate(reader::RootHitReader, state = nothing)
 end
 
 function Base.read(reader::RootHitReader, T=Event{Vector{Hit}})
-    enum, hitcnt, primcnt = parse_meta(reader.stream)
-    return convert(T, Event(enum, hitcnt, primcnt, RootHitIter(hitcnt, reader.stream)))
+    lock(reader.lock) do
+        enum, hitcnt, primcnt = parse_meta(reader.stream)
+        return convert(T, Event(enum, hitcnt, primcnt, RootHitIter(hitcnt, reader.stream)))
+    end
 end
 
-Base.eof(reader::RootHitReader) = eof(reader.stream)
+function Base.eof(reader::RootHitReader)
+    lock(reader.lock) do
+        eof(reader.stream)
+    end
+end
 
 function Base.close(reader::RootHitReader)
-    reader.ownstream && close(reader.stream)
+    if reader.ownstream
+        lock(reader.lock) do
+            close(reader.stream)
+        end
+    end
 end
 
 loadstreaming(stream::IO) = RootHitReader(stream, false)
 loadstreaming(f::Function, stream::IO) = f(loadstreaming(stream))
 
-loadstreaming(path::AbstractString) = RootHitReader(open(path), true)
+loadstreaming(path::AbstractString) = RootHitReader(open(path, lock=false), true)
 function loadstreaming(f::Function, path::AbstractString)
     reader = loadstreaming(path)
     try
@@ -82,7 +103,7 @@ end
 
 function load(path::AbstractString; T=Event{Vector{Hit}})
     is_root_hit_file(path) || error("cannot read events from $f")
-    open(path) do f
+    open(path, lock=false) do f
         return load(f; T=T)
     end
 end
