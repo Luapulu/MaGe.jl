@@ -52,7 +52,7 @@ Base.iterate(e::AbstractEvent, state) = iterate(hits(e), state)
 function Base.show(io::IO, e::AbstractEvent)
     print(io, "Event(")
     print(io, eventnum(e), ", ", hitcount(e), ", ", primarycount(e), ", ")
-    show(IOContext(io, :limit => true, :compact => true), hits(e))
+    print(IOContext(io, :limit => true, :compact => true), hits(e))
     print(")")
 end
 
@@ -81,8 +81,6 @@ struct Event{T} <: AbstractEvent
     end
 end
 
-Event{T}(e) where {T} = Event{T}(eventnum(e), hitcount(e), primarycount(e), hits(e))
-
 function Event(eventnum, hitcount, primarycount, hits::T) where {T}
     Event{T}(eventnum, hitcount, primarycount, hits)
 end
@@ -92,7 +90,7 @@ function Event{Vector{H}}(eventnum, hitcount, primarycount, hits::AbstractHitIte
 end
 
 function Base.convert(::Type{Event{Vector{H}}}, e::Event{<:AbstractHitIter}) where {H}
-    return Event{Vector{H}}(e)
+    return Event{Vector{H}}(eventnum(e), hitcount(e), primarycount(e), hits(e))
 end
 
 Base.eltype(::Type{Event{T}}) where {T} = eltype(T)
