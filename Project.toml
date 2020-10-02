@@ -1,7 +1,7 @@
 name = "MaGe"
 uuid = "a1237f97-e57a-43a8-8ead-9081d93d2731"
 authors = ["Paul Nemec"]
-version = "0.3.0"
+version = "0.3.1"
 
 [deps]
 Mmap = "a63ad114-7e13-5084-954f-fe012c677804"
