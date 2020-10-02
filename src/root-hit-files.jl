@@ -1,26 +1,30 @@
-function parse_meta(stream::IOStream)
-    line = IOBuffer(readuntil(stream, '\n'))
-    return (
-        Parsers.parse(Int64, line),
-        Parsers.parse(Int64, line),
-        Parsers.parse(Int64, line)
-    )
+## Parsing ##
+
+function parse_meta(stream::IO)
+    eventnum = Parsers.parse(Int64, stream)
+    hitcount = Parsers.parse(Int64, stream)
+    primarycount = Parsers.parse(Int64, stream)
+    skip(stream, 1)
+    return eventnum, hitcount, primarycount
 end
 
-function parse_hit(stream::IOStream)
-    line = IOBuffer(readuntil(stream, UInt8('p')))
-    skip(stream, 8)
-    return Hit(
-        Parsers.parse(Float64, line),
-        Parsers.parse(Float64, line),
-        Parsers.parse(Float64, line),
-        Parsers.parse(Float64, line),
-        Parsers.parse(Float64, line),
-        Parsers.parse(Int64, line),
-        Parsers.parse(Int64, line),
-        Parsers.parse(Int64, line)
+function parse_hit(stream::IO)
+    h = Hit(
+        Parsers.parse(Float64, stream),
+        Parsers.parse(Float64, stream),
+        Parsers.parse(Float64, stream),
+        Parsers.parse(Float64, stream),
+        Parsers.parse(Float64, stream),
+        Parsers.parse(Int64, stream),
+        Parsers.parse(Int64, stream),
+        Parsers.parse(Int64, stream)
     )
+    skip(stream, 9)
+    return h
 end
+
+
+## Reading events ##
 
 struct RootHitIter <: AbstractHitIter
     hitcount::Integer
@@ -42,7 +46,7 @@ struct RootHitReader
 end
 
 function RootHitReader(stream::IOStream, ownstream::Bool)
-    RootHitReader(stream, ownstream, stream.lock)
+    RootHitReader(IOBuffer(mmap(stream)), ownstream, stream.lock)
 end
 
 function RootHitReader(stream::IO, ownstream::Bool)

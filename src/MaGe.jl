@@ -1,6 +1,7 @@
 module MaGe
 
 using Parsers
+using Mmap: mmap
 
 import Base
 
