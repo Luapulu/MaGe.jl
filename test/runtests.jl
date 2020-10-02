@@ -33,52 +33,56 @@ end
 
 
 @testset "Parsing .root.hits files" begin
-    meta_stream = IOBuffer("624 119 3\n")
-    @test MaGe.parse_meta(meta_stream) == (624, 119, 3)
+    path = tempname()
 
-    hitstream = IOBuffer(
-        """
-        1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet
-        1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet
-        """)
+    open(path, "w") do io
+        truncate(io, 0)
+        write(io, "123 456 789\n")
+    end
 
-    @test MaGe.parse_hit(hitstream) == Hit(1.60738, -2.07026, -201.594, 0.1638, 0, 22, 187, 4)
-    @test MaGe.parse_hit(hitstream) == Hit(1.91771, -2.52883, -201.842, 0.24458, 0, 22, 187, 4)
+    open(path) do io
+        @test MaGe.parse_meta(io) == (123, 456, 789)
+    end
 
-    teststream = IOBuffer(
-        """
-        624 2 3
-        1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet
-        1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet
-        """)
+    open(path, "w") do io
+        truncate(io, 0)
+        write(io, "1.2 -2.3 -3.4 4.5 5.6 67891011 121314 1516 physiDet
+                  0.11 0.1234321 -333 -0.44 0.001 1 2 3 physiDet")
+    end
 
-    testreader = MaGe.loadstreaming(teststream)
+    open(path) do io
+        @test MaGe.parse_hit(io) == Hit(1.2, -2.3, -3.4, 4.5, 5.6, 67891011, 121314, 1516)
+        @test MaGe.parse_hit(io) == Hit(0.11, 0.1234321, -333, -0.44, 0.001, 1, 2, 3)
+    end
+
+    open(path, "w") do io
+        truncate(io, 0)
+        write(io, "624 2 3
+                  1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet
+                  1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet")
+    end
+
+    testreader = MaGe.loadstreaming(path)
 
     e = read(testreader)
     @test eventnum(e) == 624
     @test hitcount(e) == 2
     @test primarycount(e) == 3
 
-    parsed_hits = [
-        MaGe.parse_hit(IOBuffer("1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet")),
-        MaGe.parse_hit(IOBuffer("1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet"))
-    ]
-
-    for i in 1:2
-        @test hits(e)[i] == parsed_hits[i]
-    end
+    @test hits(e)[1] == Hit(1.60738, -2.07026, -201.594, 0.1638, 0, 22, 187, 4)
+    @test hits(e)[2] == Hit(1.91771, -2.52883, -201.842, 0.24458, 0, 22, 187, 4)
 
     for (h1, h2) in zip(e, hits(e))
-        @test h1 == h2
+        @test h1 === h2
     end
 
     @test isnothing(iterate(testreader))
 
-    eventpath = realpath(joinpath(dirname(pathof(MaGe)), "..", "test", "test.root.hits"))
+    testpath = realpath(joinpath(dirname(pathof(MaGe)), "..", "test", "test.root.hits"))
 
-    @test MaGe.is_root_hit_file(eventpath)
+    @test MaGe.is_root_hit_file(testpath)
 
-    events = MaGe.load(eventpath)
+    events = MaGe.load(testpath)
 
     lastevent = events[end]
 
@@ -92,7 +96,7 @@ end
 
     @test hits(lastevent)[end] == Hit(-1.18915, -2.28214, -198.958, 8.4419, 0.0, 11, 165, 16)
 
-    @test MaGe.loadstreaming(eventpath) do stream
+    @test MaGe.loadstreaming(testpath) do stream
         for e in stream
             if eventnum(e) == 999851
                 return hitcount(e) == 319
@@ -101,7 +105,7 @@ end
         return false
     end
 
-    @test MaGe.loadstreaming(eventpath) do stream
+    @test MaGe.loadstreaming(testpath) do stream
         while !eof(stream)
             e = read(stream)
             if eventnum(e) == 999851
