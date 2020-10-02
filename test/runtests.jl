@@ -115,6 +115,8 @@ end
         return false
     end
 
+    @test all(extrema(energy, MaGe.loadstreaming(testpath)) .≈ (17.05186, 3068.0469217))
+
     badpath = realpath(joinpath(dirname(pathof(MaGe)), "..", "test", "bad.root.hits"))
     badreader = MaGe.loadstreaming(badpath)
     @test_throws Parsers.Error read(badreader)
