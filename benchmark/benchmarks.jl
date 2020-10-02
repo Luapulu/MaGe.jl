@@ -9,10 +9,17 @@ SUITE["read_event"] = @benchmarkable read(MaGe.loadstreaming($eventpath), Event{
 
 SUITE["load_file"] = @benchmarkable MaGe.load($eventpath; T=Event{Vector{Hit}})
 
-e = first(MaGe.loadstreaming(eventpath))
+e = MaGe.loadstreaming(first, eventpath)
 SUITE["energy"] = @benchmarkable energy($e)
 
-SUITE["mean_energy"] = @benchmarkable mean(energy, MaGe.loadstreaming($eventpath))
+SUITE["mean_energy"] = @benchmarkable MaGe.loadstreaming($eventpath) do es
+    energies = Vector{Float64}()
+    while !eof(es)
+        e = read(es, Event{MaGe.RootHitIter})
+        push!(energies, energy(e))
+    end
+    return mean(energies)
+end
 
 getfirstloc(e::MaGe.AbstractEvent) = location(first(hits(e)))
 SUITE["collect_first_locs"] = @benchmarkable map(getfirstloc, MaGe.loadstreaming($eventpath))
